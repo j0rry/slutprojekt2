@@ -1,4 +1,5 @@
-﻿using Raylib_cs;
+﻿using System.Numerics;
+using Raylib_cs;
 
 Game game = new();
 
@@ -65,8 +66,12 @@ class MainMenuState : State
 
 class GameState : State
 {
+
     public override void Update(Game game)
     {
+        Player p = new(400, 400);
+        p.Update();
+        p.Draw();
         if (Raylib.IsKeyPressed(KeyboardKey.Space))
         {
             game.ChangeState(new MainMenuState());
@@ -81,6 +86,69 @@ class GameState : State
     public override void Exit(Game game)
     {
         Console.WriteLine("Exiting Game");
+    }
+
+}
+
+abstract class GameObject
+{
+    public Vector2Int pos;
+    public abstract void Update();
+    public virtual void Draw()
+    {
+        Raylib.DrawText("GameObject", pos.X, pos.Y, 50, Color.Black);
+    }
+}
+
+class Player : GameObject
+{
+
+    public Player(int x, int y)
+    {
+        pos.X = x;
+        pos.Y = y;
+    }
+
+    public override void Update()
+    {
+        Vector2 direction = Input.Move();
+
+
+        Vector2Int move = new Vector2Int(
+            (int)(direction.X * 10 * Raylib.GetFrameTime()),
+            (int)(direction.Y * 10 * Raylib.GetFrameTime())
+        );
+
+        pos += move;
+    }
+}
+
+struct Vector2Int
+{
+    public int X;
+    public int Y;
+
+    public Vector2Int(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+
+
+}
+
+struct Input
+{
+    public static Vector2 Move()
+    {
+        int x = 0;
+        int y = 0;
+        if (Raylib.IsKeyDown(KeyboardKey.A)) x -= 1;
+        if (Raylib.IsKeyDown(KeyboardKey.D)) x += 1;
+        if (Raylib.IsKeyDown(KeyboardKey.W)) y -= 1;
+        if (Raylib.IsKeyDown(KeyboardKey.S)) y += 1;
+
+        return new Vector2(x, y);
     }
 
 }
