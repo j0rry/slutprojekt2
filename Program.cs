@@ -134,6 +134,10 @@ struct Vector2Int
         Y = y;
     }
 
+    public static Vector2Int operator +(Vector2Int a, Vector2Int b)
+    {
+        return new Vector2Int(a.X + b.X, a.Y + b.Y);
+    }
 
 }
 
