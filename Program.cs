@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+using System.Numerics;
+using System.Net.Http;
 using Raylib_cs;
 
 Game game = new();
@@ -7,7 +8,7 @@ class Game
 {
     static public int WindowXScale { get; private set; } = 800;
     static public int WindowYScale { get; private set; } = 800;
-    public State currentState { get; private set; } = new MainMenuState();
+    public State CurrentState { get; private set; } = new MainMenuState();
     public State PreviousState { get; private set; }
 
     public Game()
@@ -24,17 +25,17 @@ class Game
         {
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.White);
-            currentState.Update(this);
+            CurrentState.Update(this);
             Raylib.EndDrawing();
         }
     }
 
     public void ChangeState(State state)
     {
-        currentState.Exit(this);
-        PreviousState = currentState;
-        currentState = state;
-        currentState.Enter(this);
+        CurrentState.Exit(this);
+        PreviousState = CurrentState;
+        CurrentState = state;
+        CurrentState.Enter(this);
     }
 }
 
@@ -42,11 +43,11 @@ abstract class State
 {
     public virtual void Enter(Game game)
     {
-        Console.WriteLine($"Entering State");
+        Console.WriteLine("Entering State");
     }
     public virtual void Exit(Game game)
     {
-        Console.WriteLine($"Exiting State");
+        Console.WriteLine("Exiting State");
     }
     public abstract void Update(Game game);
 }
@@ -55,8 +56,9 @@ class MainMenuState : State
 {
     public override void Update(Game game)
     {
-        Raylib.ClearBackground(Color.Red);
-        Raylib.DrawRectangle((Game.WindowXScale / 2) - 100, (Game.WindowYScale / 2) - 100, 100, 100, Color.Blue);
+        Raylib.ClearBackground(Color.RayWhite);
+        Raylib.DrawText("GAME", Game.WindowXScale / 2 - 60, 100, 60, Color.Black);
+        Raylib.DrawText("Press SPACE to start", Game.WindowXScale / 2 - 140, Game.WindowYScale / 2, 24, Color.DarkGray);
         if (Raylib.IsKeyPressed(KeyboardKey.Space))
         {
             game.ChangeState(new GameState());
@@ -66,79 +68,128 @@ class MainMenuState : State
 
 class GameState : State
 {
-
-    public override void Update(Game game)
-    {
-        Player p = new(400, 400);
-        p.Update();
-        p.Draw();
-        if (Raylib.IsKeyPressed(KeyboardKey.Space))
-        {
-            game.ChangeState(new MainMenuState());
-        }
-
-    }
+    private List<GameObject> objects = new();
 
     public override void Enter(Game game)
     {
         Console.WriteLine("Entering Game");
+        objects.Clear();
+        objects.Add(new Player(400, 400));
+        objects.Add(new Boss(150, 150));
     }
+
+    public override void Update(Game game)
+    {
+        foreach (GameObject obj in objects)
+        {
+            obj.Update();
+            obj.Draw();
+        }
+        Raylib.DrawText("WASD = move | SPACE = menu", 10, 10, 18, Color.DarkGray);
+        if (Raylib.IsKeyPressed(KeyboardKey.Space))
+        {
+            game.ChangeState(new MainMenuState());
+        }
+    }
+
     public override void Exit(Game game)
     {
         Console.WriteLine("Exiting Game");
     }
-
 }
 
 abstract class GameObject
 {
-    public Vector2Int pos;
+    private Vector2Int _pos;
+    public Vector2Int Pos
+    {
+        get => _pos;
+        protected set => _pos = value;
+    }
+
     public abstract void Update();
     public virtual void Draw()
     {
-        Raylib.DrawText("GameObject", pos.X, pos.Y, 50, Color.Black);
+        Raylib.DrawText("Object", Pos.X, Pos.Y, 20, Color.Black);
     }
 }
 
 class Player : GameObject
 {
-
     public Player(int x, int y)
     {
-        pos.X = x;
-        pos.Y = y;
+        Pos = new Vector2Int(x, y);
     }
 
     public override void Update()
     {
         Vector2 direction = Input.Move();
-
-
         Vector2Int move = new Vector2Int(
-            (int)(direction.X * 10 * Raylib.GetFrameTime()),
-            (int)(direction.Y * 10 * Raylib.GetFrameTime())
+            (int)(direction.X * 200 * Raylib.GetFrameTime()),
+            (int)(direction.Y * 200 * Raylib.GetFrameTime())
         );
+        Pos += move;
+    }
 
-        pos += move;
+    public override void Draw()
+    {
+        Raylib.DrawRectangle(Pos.X, Pos.Y, 40, 40, Color.Blue);
+        Raylib.DrawText("Player", Pos.X, Pos.Y - 20, 14, Color.Blue);
+    }
+}
+
+class Enemy : GameObject
+{
+    protected int Speed = 60;
+
+    public Enemy(int x, int y)
+    {
+        Pos = new Vector2Int(x, y);
+    }
+
+    public override void Update()
+    {
+        Pos += new Vector2Int(0, (int)(Speed * Raylib.GetFrameTime()));
+    }
+
+    public override void Draw()
+    {
+        Raylib.DrawRectangle(Pos.X, Pos.Y, 30, 30, Color.Red);
+    }
+}
+
+class Boss : Enemy
+{
+    public Boss(int x, int y) : base(x, y)
+    {
+        Speed = 25;
+    }
+
+    public override void Draw()
+    {
+        Raylib.DrawRectangle(Pos.X, Pos.Y, 60, 60, Color.Purple);
+        Raylib.DrawText("BOSS", Pos.X, Pos.Y - 20, 16, Color.Purple);
     }
 }
 
 struct Vector2Int
 {
-    public int X;
-    public int Y;
+    private int _x;
+    private int _y;
+
+    public int X { get => _x; }
+    public int Y { get => _y; }
 
     public Vector2Int(int x, int y)
     {
-        X = x;
-        Y = y;
+        _x = x;
+        _y = y;
     }
 
     public static Vector2Int operator +(Vector2Int a, Vector2Int b)
     {
         return new Vector2Int(a.X + b.X, a.Y + b.Y);
     }
-
 }
 
 struct Input
@@ -151,8 +202,6 @@ struct Input
         if (Raylib.IsKeyDown(KeyboardKey.D)) x += 1;
         if (Raylib.IsKeyDown(KeyboardKey.W)) y -= 1;
         if (Raylib.IsKeyDown(KeyboardKey.S)) y += 1;
-
         return new Vector2(x, y);
     }
-
 }
