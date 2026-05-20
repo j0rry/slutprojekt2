@@ -198,36 +198,48 @@ class Boss : Enemy
     }
 }
 
+// En struktur som är en position me heltal
 struct Vector2Int
 {
+    // X och Y koordinater
     private int _x;
     private int _y;
-
+    // Properties för att läsa koordinaterna
     public int X { get => _x; }
     public int Y { get => _y; }
 
+    // Konstruktor som sätter startvärden
     public Vector2Int(int x, int y)
     {
         _x = x;
         _y = y;
     }
 
+    // Operator overload som gör att två Vector2Int kan adderas
     public static Vector2Int operator +(Vector2Int a, Vector2Int b)
     {
         return new Vector2Int(a.X + b.X, a.Y + b.Y);
     }
 }
 
+// strukt för att hantera spelarens input
 struct Input
 {
     public static Vector2 Move()
     {
+        // Startvärde för rörelseriktning
         int x = 0;
         int y = 0;
+
+        // A = vänster
         if (Raylib.IsKeyDown(KeyboardKey.A)) x -= 1;
+        // D = höger
         if (Raylib.IsKeyDown(KeyboardKey.D)) x += 1;
+        // W = upp
         if (Raylib.IsKeyDown(KeyboardKey.W)) y -= 1;
+        // S = ner
         if (Raylib.IsKeyDown(KeyboardKey.S)) y += 1;
+        // Returnera rörelseriktningen som en vector
         return new Vector2(x, y);
     }
 }
